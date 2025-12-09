@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Stream Videos</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        /* ---------------- Global Page Styling ---------------- */
+        
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: "Poppins", "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #141e30, #243b55);
+            color: #fff;
+        }
+        
+        h1 {
+            text-align: center;
+            margin: 20px 0 10px;
+            font-size: 2.7rem;
+            font-weight: 700;
+            color: #ffdd70;
+            text-shadow: 0 0 10px rgba(255, 230, 140, 0.4);
+        }
+        /* ---------------- Search Bar ---------------- */
+        
+        .search-container {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        
+        .search-input {
+            width: 80%;
+            max-width: 500px;
+            padding: 12px 18px;
+            border-radius: 50px;
+            border: none;
+            font-size: 1rem;
+            outline: none;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(12px);
+            color: white;
+            transition: 0.3s;
+        }
+        
+        .search-input:focus {
+            background: rgba(255, 255, 255, 0.25);
+            box-shadow: 0 0 12px #ffd861;
+        }
+        /* ---------------- Card Layout ---------------- */
+        
+        .container {
+            display: grid;
+            gap: 30px;
+            padding: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+        }
+        /* ---------------- Card Styling ---------------- */
+        
+        .card {
+            background: rgba(255, 255, 255, 0.12);
+            padding: 18px;
+            border-radius: 18px;
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+            display: flex;
+            flex-direction: column;
+            transition: 0.35s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .card::before {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 250%;
+            height: 250%;
+            background: radial-gradient(circle, rgba(255, 221, 112, 0.15), transparent 70%);
+            transform: rotate(45deg);
+        }
+        
+        .card:hover {
+            transform: translateY(-6px) scale(1.03);
+            box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45);
+        }
+        /* ---------------- Title ---------------- */
+        
+        .title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            text-align: center;
+            color: #ffe58f;
+            margin-bottom: 15px;
+        }
+        /* ---------------- Video Styling ---------------- */
+        
+        video {
+            width: 100%;
+            height: 230px;
+            border-radius: 12px;
+            object-fit: cover;
+            transition: transform 0.35s, box-shadow 0.35s;
+            z-index: 2;
+        }
+        
+        .card:hover video {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(255, 226, 140, 0.6);
+        }
+        /* ---------------- Description ---------------- */
+        
+        .description {
+            font-size: 0.95rem;
+            opacity: 0.9;
+            text-align: center;
+            margin-top: 12px;
+            z-index: 2;
+        }
+        /* Responsive video size */
+        
+        @media (max-width: 450px) {
+            video {
+                height: 180px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>🎬 Stream Videos</h1>
+
+    <div class="search-container">
+        <input type="text" class="search-input" id="searchBox" placeholder="Search videos...">
+    </div>
+
+    <div class="container" id="videoContainer"></div>
+
+    <script>
+        async function loadVideos() {
+            try {
+                const res = await fetch("http://localhost:8080/movie-info/getMovies");
+                const videos = await res.json();
+                renderVideos(videos);
+
+                // Enable search filtering
+                document.getElementById("searchBox").oninput = function() {
+                    const query = this.value.toLowerCase();
+                    const filtered = videos.filter(v =>
+                        v.movie_name.toLowerCase().includes(query) ||
+                        v.description.toLowerCase().includes(query)
+                    );
+                    renderVideos(filtered);
+                };
+
+            } catch (err) {
+                console.error("Error loading videos:", err);
+            }
+        }
+
+        function renderVideos(list) {
+            const container = document.getElementById("videoContainer");
+            container.innerHTML = "";
+
+            list.forEach(v => {
+                const card = document.createElement("div");
+                card.className = "card";
+
+                const title = document.createElement("div");
+                title.className = "title";
+                title.textContent = v.movie_name;
+
+                const video = document.createElement("video");
+                video.setAttribute("controls", "true");
+                video.setAttribute("preload", "metadata");
+                video.src = `http://localhost:8080/stream/with-id/${v.movie_id}`;
+
+                video.addEventListener("loadedmetadata", () => {
+                    if (video.duration > 2) video.currentTime = 2;
+                });
+
+                const desc = document.createElement("div");
+                desc.className = "description";
+                desc.textContent = v.description;
+
+                card.appendChild(title);
+                card.appendChild(video);
+                card.appendChild(desc);
+
+                container.appendChild(card);
+            });
+        }
+
+        loadVideos();
+    </script>
+
+</body>
+
+</html>
